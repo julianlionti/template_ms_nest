@@ -1,0 +1,86 @@
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:4.4
+    # image: mongo:5.0.3
+    env_file:
+      - .env
+    environment:
+      - MONGO_INITDB_DATABASE=${DB_NAME}
+      - MONGO_INITDB_ROOT_USERNAME=${DB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_PASS}
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - 27017:27017
+    networks:
+      - backend
+
+  gateway:
+    image: racinglocura07/template-nest-gateway:latest
+    build:
+      context: ./
+      dockerfile: ./apps/gateway/Dockerfile
+
+    restart: unless-stopped
+    hostname: gateway
+    env_file:
+      - .env
+    networks:
+      - backend
+    ports:
+      - ${API_GATEWAY_PORT}:${API_GATEWAY_PORT}
+
+  mailer:
+    image: racinglocura07/template-nest-mailer:latest
+    build:
+      context: ./
+      dockerfile: ./apps/mailer/Dockerfile
+
+    restart: unless-stopped
+    hostname: mailer
+    env_file:
+      - .env
+    networks:
+      - backend
+    ports:
+      - ${MAILER_SERVICE_PORT}:${MAILER_SERVICE_PORT}
+
+  token:
+    image: racinglocura07/template-nest-token:latest
+    build:
+      context: ./
+      dockerfile: ./apps/token/Dockerfile
+
+    restart: unless-stopped
+    hostname: token
+    env_file:
+      - .env
+    networks:
+      - backend
+    depends_on:
+      - mongodb
+    ports:
+      - ${TOKEN_SERVICE_PORT}:${TOKEN_SERVICE_PORT}
+
+  user:
+    image: racinglocura07/template-nest-user:latest
+    build:
+      context: ./
+      dockerfile: ./apps/user/Dockerfile
+      # target: development
+
+    restart: unless-stopped
+    hostname: user
+    env_file:
+      - .env
+    networks:
+      - backend
+    depends_on:
+      - mongodb
+    ports:
+      - ${USER_SERVICE_PORT}:${USER_SERVICE_PORT}
+
+networks:
+  backend:
+    driver: bridge
